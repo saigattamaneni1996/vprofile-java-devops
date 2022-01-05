@@ -1,0 +1,20 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...   
+      - export IMAGE_NAME=[IMAGE_NAME]-$ENVIRONMENT-$(date +%Y-%m-%d).$CODEBUILD_BUILD_NUMBER
+      - docker build --tag $IMAGE_REPO_NAME:$IMAGE_NAME .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_NAME      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - export IMAGE_PATH=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_NAME
+      - echo "Image path $IMAGE_PATH"
+      - echo Pushing the Docker image...
+      - docker push $IMAGE_PATH
